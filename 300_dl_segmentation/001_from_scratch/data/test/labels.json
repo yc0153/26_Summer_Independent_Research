@@ -1,0 +1,902 @@
+[
+  {
+    "file_name": "000000.jpg",
+    "mask_file_name": "000000_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000001.jpg",
+    "mask_file_name": "000001_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000002.jpg",
+    "mask_file_name": "000002_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000003.jpg",
+    "mask_file_name": "000003_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000004.jpg",
+    "mask_file_name": "000004_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000005.jpg",
+    "mask_file_name": "000005_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000006.jpg",
+    "mask_file_name": "000006_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000007.jpg",
+    "mask_file_name": "000007_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000008.jpg",
+    "mask_file_name": "000008_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000009.jpg",
+    "mask_file_name": "000009_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000010.jpg",
+    "mask_file_name": "000010_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000011.jpg",
+    "mask_file_name": "000011_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000012.jpg",
+    "mask_file_name": "000012_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000013.jpg",
+    "mask_file_name": "000013_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000014.jpg",
+    "mask_file_name": "000014_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000015.jpg",
+    "mask_file_name": "000015_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000016.jpg",
+    "mask_file_name": "000016_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000017.jpg",
+    "mask_file_name": "000017_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000018.jpg",
+    "mask_file_name": "000018_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000019.jpg",
+    "mask_file_name": "000019_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000020.jpg",
+    "mask_file_name": "000020_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000021.jpg",
+    "mask_file_name": "000021_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000022.jpg",
+    "mask_file_name": "000022_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000023.jpg",
+    "mask_file_name": "000023_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000024.jpg",
+    "mask_file_name": "000024_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000025.jpg",
+    "mask_file_name": "000025_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000026.jpg",
+    "mask_file_name": "000026_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000027.jpg",
+    "mask_file_name": "000027_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000028.jpg",
+    "mask_file_name": "000028_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000029.jpg",
+    "mask_file_name": "000029_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000030.jpg",
+    "mask_file_name": "000030_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000031.jpg",
+    "mask_file_name": "000031_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000032.jpg",
+    "mask_file_name": "000032_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000033.jpg",
+    "mask_file_name": "000033_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000034.jpg",
+    "mask_file_name": "000034_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000035.jpg",
+    "mask_file_name": "000035_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000036.jpg",
+    "mask_file_name": "000036_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000037.jpg",
+    "mask_file_name": "000037_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000038.jpg",
+    "mask_file_name": "000038_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000039.jpg",
+    "mask_file_name": "000039_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000040.jpg",
+    "mask_file_name": "000040_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000041.jpg",
+    "mask_file_name": "000041_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000042.jpg",
+    "mask_file_name": "000042_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000043.jpg",
+    "mask_file_name": "000043_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000044.jpg",
+    "mask_file_name": "000044_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000045.jpg",
+    "mask_file_name": "000045_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000046.jpg",
+    "mask_file_name": "000046_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000047.jpg",
+    "mask_file_name": "000047_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000048.jpg",
+    "mask_file_name": "000048_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000049.jpg",
+    "mask_file_name": "000049_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000050.jpg",
+    "mask_file_name": "000050_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000051.jpg",
+    "mask_file_name": "000051_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000052.jpg",
+    "mask_file_name": "000052_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000053.jpg",
+    "mask_file_name": "000053_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000054.jpg",
+    "mask_file_name": "000054_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000055.jpg",
+    "mask_file_name": "000055_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000056.jpg",
+    "mask_file_name": "000056_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000057.jpg",
+    "mask_file_name": "000057_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000058.jpg",
+    "mask_file_name": "000058_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000059.jpg",
+    "mask_file_name": "000059_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000060.jpg",
+    "mask_file_name": "000060_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000061.jpg",
+    "mask_file_name": "000061_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000062.jpg",
+    "mask_file_name": "000062_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000063.jpg",
+    "mask_file_name": "000063_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000064.jpg",
+    "mask_file_name": "000064_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000065.jpg",
+    "mask_file_name": "000065_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000066.jpg",
+    "mask_file_name": "000066_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000067.jpg",
+    "mask_file_name": "000067_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000068.jpg",
+    "mask_file_name": "000068_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000069.jpg",
+    "mask_file_name": "000069_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000070.jpg",
+    "mask_file_name": "000070_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000071.jpg",
+    "mask_file_name": "000071_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000072.jpg",
+    "mask_file_name": "000072_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000073.jpg",
+    "mask_file_name": "000073_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000074.jpg",
+    "mask_file_name": "000074_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000075.jpg",
+    "mask_file_name": "000075_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000076.jpg",
+    "mask_file_name": "000076_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000077.jpg",
+    "mask_file_name": "000077_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000078.jpg",
+    "mask_file_name": "000078_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000079.jpg",
+    "mask_file_name": "000079_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000080.jpg",
+    "mask_file_name": "000080_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000081.jpg",
+    "mask_file_name": "000081_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000082.jpg",
+    "mask_file_name": "000082_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000083.jpg",
+    "mask_file_name": "000083_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000084.jpg",
+    "mask_file_name": "000084_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000085.jpg",
+    "mask_file_name": "000085_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000086.jpg",
+    "mask_file_name": "000086_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000087.jpg",
+    "mask_file_name": "000087_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000088.jpg",
+    "mask_file_name": "000088_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000089.jpg",
+    "mask_file_name": "000089_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000090.jpg",
+    "mask_file_name": "000090_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000091.jpg",
+    "mask_file_name": "000091_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000092.jpg",
+    "mask_file_name": "000092_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000093.jpg",
+    "mask_file_name": "000093_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000094.jpg",
+    "mask_file_name": "000094_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000095.jpg",
+    "mask_file_name": "000095_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000096.jpg",
+    "mask_file_name": "000096_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000097.jpg",
+    "mask_file_name": "000097_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000098.jpg",
+    "mask_file_name": "000098_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000099.jpg",
+    "mask_file_name": "000099_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000100.jpg",
+    "mask_file_name": "000100_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000101.jpg",
+    "mask_file_name": "000101_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000102.jpg",
+    "mask_file_name": "000102_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000103.jpg",
+    "mask_file_name": "000103_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000104.jpg",
+    "mask_file_name": "000104_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000105.jpg",
+    "mask_file_name": "000105_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000106.jpg",
+    "mask_file_name": "000106_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000107.jpg",
+    "mask_file_name": "000107_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000108.jpg",
+    "mask_file_name": "000108_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000109.jpg",
+    "mask_file_name": "000109_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000110.jpg",
+    "mask_file_name": "000110_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000111.jpg",
+    "mask_file_name": "000111_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000112.jpg",
+    "mask_file_name": "000112_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000113.jpg",
+    "mask_file_name": "000113_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000114.jpg",
+    "mask_file_name": "000114_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000115.jpg",
+    "mask_file_name": "000115_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000116.jpg",
+    "mask_file_name": "000116_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000117.jpg",
+    "mask_file_name": "000117_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000118.jpg",
+    "mask_file_name": "000118_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000119.jpg",
+    "mask_file_name": "000119_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000120.jpg",
+    "mask_file_name": "000120_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000121.jpg",
+    "mask_file_name": "000121_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000122.jpg",
+    "mask_file_name": "000122_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000123.jpg",
+    "mask_file_name": "000123_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000124.jpg",
+    "mask_file_name": "000124_mask.png",
+    "label": 0,
+    "class_name": "background"
+  },
+  {
+    "file_name": "000125.jpg",
+    "mask_file_name": "000125_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000126.jpg",
+    "mask_file_name": "000126_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000127.jpg",
+    "mask_file_name": "000127_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000128.jpg",
+    "mask_file_name": "000128_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000129.jpg",
+    "mask_file_name": "000129_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000130.jpg",
+    "mask_file_name": "000130_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000131.jpg",
+    "mask_file_name": "000131_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000132.jpg",
+    "mask_file_name": "000132_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000133.jpg",
+    "mask_file_name": "000133_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000134.jpg",
+    "mask_file_name": "000134_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000135.jpg",
+    "mask_file_name": "000135_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000136.jpg",
+    "mask_file_name": "000136_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000137.jpg",
+    "mask_file_name": "000137_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000138.jpg",
+    "mask_file_name": "000138_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000139.jpg",
+    "mask_file_name": "000139_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000140.jpg",
+    "mask_file_name": "000140_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000141.jpg",
+    "mask_file_name": "000141_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000142.jpg",
+    "mask_file_name": "000142_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000143.jpg",
+    "mask_file_name": "000143_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000144.jpg",
+    "mask_file_name": "000144_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000145.jpg",
+    "mask_file_name": "000145_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  },
+  {
+    "file_name": "000146.jpg",
+    "mask_file_name": "000146_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000147.jpg",
+    "mask_file_name": "000147_mask.png",
+    "label": 1,
+    "class_name": "mouse"
+  },
+  {
+    "file_name": "000148.jpg",
+    "mask_file_name": "000148_mask.png",
+    "label": 2,
+    "class_name": "dog"
+  },
+  {
+    "file_name": "000149.jpg",
+    "mask_file_name": "000149_mask.png",
+    "label": 3,
+    "class_name": "cleaner"
+  }
+]
