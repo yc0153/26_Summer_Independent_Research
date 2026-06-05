@@ -14,128 +14,104 @@ from _11_dataset import DataSet
 from _20_network import CNN_Model
 
 """==============================================================
-# 준비 작업
+# 기본 설정
 =============================================================="""
-# 기본 설정값 불러오기
-config = Config()
 
-# random seed 고정
+config = Config()
 torch.manual_seed(config.RANDOM_SEED)
+class_name_to_label = config.class_name_to_label
 
 # checkpoint directory 생성
 os.makedirs(name=config.CHECKPOINT_DIR, exist_ok=True)
+checkpoint_path = os.path.join(config.CHECKPOINT_DIR, config.CHECKPOINT_NAME)
 
-# 학습 장치 설정
+# GPU가 있으면 cuda, 없으면 cpu 사용
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 """==============================================================
-# 학습과 검증 데이터셋 생성
+# Dataset과 DataLoader 만들기
 =============================================================="""
 # train/valid dataset 생성
 train_dataset = DataSet(split_name="train")
 valid_dataset = DataSet(split_name="valid")
 
-# 첫 번째 이미지 tensor에서 입력 채널 수 확인
-first_img_tensor = train_dataset[0][0]
-img_ch = int(first_img_tensor.shape[0])
+# image channel 수 확인
+img_ch = int(train_dataset[0][0].shape[0])
 
-"""==============================================================
-# 학습과 검증 dataloader 생성
-=============================================================="""
+# mini-batch 학습을 위한 DataLoader 생성
 train_loader = DataLoader(dataset=train_dataset,
                           batch_size=config.BATCH_SIZE,
                           shuffle=True,
                           num_workers=config.NUM_WORKERS)
-
 valid_loader = DataLoader(dataset=valid_dataset,
                           batch_size=config.BATCH_SIZE,
                           shuffle=False,
                           num_workers=config.NUM_WORKERS)
 
 """==============================================================
-# 디텍션 모델 생성
+# model, loss, optimizer 설정
 =============================================================="""
-# CNN_Model 객체 생성 후 학습 장치로 이동
+# object detection model 생성
 model = CNN_Model(img_ch=img_ch)
 model = model.to(device=device)
 
-"""==============================================================
-# 손실 함수와 optimizer 설정
-=============================================================="""
-# class prediction loss와 bbox regression loss 설정
+# classification loss와 bbox regression loss 정의
 class_loss_fn = nn.CrossEntropyLoss()
-bbox_loss_fn = nn.SmoothL1Loss()
-optimizer = torch.optim.Adam(
-    params=model.parameters(), lr=config.LEARNING_RATE)
+bbox_loss_fn = nn.L1Loss()
+
+# optimizer 정의
+optimizer = torch.optim.Adam(params=model.parameters(),
+                             lr=config.LEARNING_RATE)
 
 """==============================================================
-# 학습 상태 초기화와 checkpoint 설정
-=============================================================="""
-# 학습 시작 epoch와 best valid loss 초기화
-start_epoch = 1
-best_valid_loss = float("inf")
-
-# checkpoint file path 생성
-checkpoint_path = os.path.join(
-    config.CHECKPOINT_DIR, config.TRAIN_SETTING["ckp_name"])
-
-# 이어 학습 모드이면 checkpoint에서 모델과 optimizer 상태 복원
-if config.TRAIN_SETTING["train_mode"] == "resume" and os.path.exists(checkpoint_path):
-    checkpoint = torch.load(f=checkpoint_path, map_location=device)
-    model.load_state_dict(state_dict=checkpoint["model_state_dict"])
-    optimizer.load_state_dict(state_dict=checkpoint["optimizer_state_dict"])
-    start_epoch = int(checkpoint["epoch"]) + 1
-    best_valid_loss = float(checkpoint["best_valid_loss"])
-
-"""==============================================================
-# 디텍션 손실 계산 함수
+# 함수: object detection loss 계산
 =============================================================="""
 
 
 def get_detection_loss(class_logits, bbox_pred, labels, bboxes):
-    """==============================================================
-    ## class loss와 bbox loss를 합산
-    =============================================================="""
-    # class 분류 손실과 bbox 좌표 회귀 손실 계산
+    # class 예측 loss
     class_loss = class_loss_fn(input=class_logits, target=labels)
 
-    # 정답 클래스에 해당하는 bbox 예측값만 선택
-    batch_indices = torch.arange(labels.size(0), device=labels.device)
-    bbox_pred_selected = bbox_pred[batch_indices, labels]
+    # background가 아닌 sample에 대해서만 bbox loss 계산
+    object_mask = labels != class_name_to_label["background"]
+    bbox_loss = bbox_loss_fn(input=bbox_pred[object_mask],
+                             target=bboxes[object_mask])
 
-    # 선택된 bbox 예측값으로 bbox 좌표 회귀 손실 계산
-    bbox_loss = bbox_loss_fn(input=bbox_pred_selected, target=bboxes)
-
-    # bbox loss weight를 곱해 최종 디텍션 손실 계산
+    # bbox loss에 weight를 곱해서 classification loss와 합산
     loss = class_loss + config.BBOX_LOSS_WEIGHT * bbox_loss
+
     return loss, class_loss, bbox_loss
 
 """==============================================================
-# 모델 학습과 검증
+# 학습 준비
 =============================================================="""
+
+best_valid_loss = float("inf")
 train_loss_history = []
 valid_loss_history = []
-for epoch in range(start_epoch, config.NUM_EPOCHS + 1):
+
+"""==============================================================
+# model 학습
+=============================================================="""
+
+for epoch in range(1, config.NUM_EPOCHS + 1):
     """==============================================================
-    ## 학습
+    ## train phase
     =============================================================="""
-    # 모델을 학습 모드로 전환
     model.train()
 
-    # train loss 누적 변수 초기화
     train_loss_sum = 0.0
     train_data_count = 0
     train_progress = tqdm(train_loader,
                           desc=f"Train {epoch}/{config.NUM_EPOCHS}")
 
-    # train batch loop
     for images, labels, bboxes in train_progress:
-        # batch data를 학습 장치로 이동
+        # mini-batch를 device로 이동
         images = images.to(device=device)
         labels = labels.to(device=device)
         bboxes = bboxes.to(device=device)
 
-        # class logits와 bbox 예측 후 loss 계산
+        # forward와 loss 계산
         class_logits, bbox_pred = model(images)
         loss, class_loss, bbox_loss = get_detection_loss(
             class_logits=class_logits,
@@ -144,47 +120,42 @@ for epoch in range(start_epoch, config.NUM_EPOCHS + 1):
             bboxes=bboxes,
         )
 
-        # gradient 계산과 model parameter update
+        # backward와 parameter update
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        # 진행 중 평균 train loss 계산
+        # epoch 평균 train loss 갱신
         batch_size = labels.size(0)
         train_loss_sum = train_loss_sum + loss.item() * batch_size
         train_data_count = train_data_count + batch_size
         train_loss = train_loss_sum / train_data_count
 
-        # 진행바에 전체 loss, class loss, bbox loss 표시
         train_progress.set_postfix(loss=f"{train_loss:.4f}",
                                    cls=f"{class_loss.item():.4f}",
                                    box=f"{bbox_loss.item():.4f}")
 
-    # epoch 단위 train loss 저장
     train_loss = train_loss_sum / train_data_count
     train_loss_history.append(train_loss)
 
     """==============================================================
-    ## 검증
+    ## valid phase
     =============================================================="""
-    # 모델을 평가 모드로 전환
     model.eval()
 
-    # valid loss 누적 변수 초기화
     valid_loss_sum = 0.0
     valid_data_count = 0
     valid_progress = tqdm(valid_loader,
                           desc=f"Valid {epoch}/{config.NUM_EPOCHS}")
 
-    # gradient 계산 없이 valid batch loop 실행
     with torch.no_grad():
         for images, labels, bboxes in valid_progress:
-            # batch data를 학습 장치로 이동
+            # mini-batch를 device로 이동
             images = images.to(device=device)
             labels = labels.to(device=device)
             bboxes = bboxes.to(device=device)
 
-            # class logits와 bbox 예측 후 loss 계산
+            # validation forward와 loss 계산
             class_logits, bbox_pred = model(images)
             loss, class_loss, bbox_loss = get_detection_loss(
                 class_logits=class_logits,
@@ -193,27 +164,25 @@ for epoch in range(start_epoch, config.NUM_EPOCHS + 1):
                 bboxes=bboxes,
             )
 
-            # 진행 중 평균 valid loss 계산
+            # epoch 평균 valid loss 갱신
             batch_size = labels.size(0)
             valid_loss_sum = valid_loss_sum + loss.item() * batch_size
             valid_data_count = valid_data_count + batch_size
             valid_loss = valid_loss_sum / valid_data_count
 
-            # 진행바에 전체 loss, class loss, bbox loss 표시
             valid_progress.set_postfix(loss=f"{valid_loss:.4f}",
                                        cls=f"{class_loss.item():.4f}",
                                        box=f"{bbox_loss.item():.4f}")
 
-    # epoch 단위 valid loss 저장
     valid_loss = valid_loss_sum / valid_data_count
     valid_loss_history.append(valid_loss)
 
-    # epoch 결과 표시
+    # 현재 epoch 결과 출력
     tqdm.write(f"Epoch {epoch}/{config.NUM_EPOCHS} | "
                f"Train Loss: {train_loss:.4f} | "
                f"Valid Loss: {valid_loss:.4f}")
 
-    # valid loss가 가장 낮아진 경우 checkpoint 저장
+    # best valid loss를 갱신하면 checkpoint 저장
     if valid_loss < best_valid_loss:
         best_valid_loss = valid_loss
 
@@ -228,27 +197,18 @@ for epoch in range(start_epoch, config.NUM_EPOCHS + 1):
         )
 
 """==============================================================
-# 학습 곡선 표시
+# training curve 시각화
 =============================================================="""
-# epoch별 train/valid loss curve 표시
-epoch_numbers = list(range(start_epoch, start_epoch + len(train_loss_history)))
+
+epoch_numbers = list(range(1, config.NUM_EPOCHS + 1))
 
 plt.figure(figsize=(8, 5))
-
 plt.plot(epoch_numbers, train_loss_history, label="Train loss")
 plt.plot(epoch_numbers, valid_loss_history, label="Valid loss")
-
 plt.title("Training curve")
 plt.xlabel("Epoch")
 plt.ylabel("Loss")
-
 plt.grid(True)
-plt.figtext(x=0.5,
-            y=0.01,
-            s=f"Checkpoint: {checkpoint_path}",
-            ha="center",
-            fontsize=8)
 plt.legend()
-
-plt.tight_layout(rect=[0, 0.05, 1, 1])
+plt.tight_layout()
 plt.show()
