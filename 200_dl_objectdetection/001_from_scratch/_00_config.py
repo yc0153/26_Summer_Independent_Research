@@ -89,7 +89,7 @@ class Config:
         self.MAX_POOL_KERNEL_SIZE = 2
         self.MAX_POOL_STRIDE = 2
 
-        # classification/bbox head 앞쪽 shared hidden layer 개수와 node 수
+        # classification 앞쪽 shared hidden layer 개수와 node 수
         self.NUM_HEAD_HIDDEN_LAYERS = 3
         self.HEAD_HIDDEN_NODES = 64
 

@@ -24,9 +24,9 @@ def make_conv_block(num_ch_in, num_ch_out, k, s, p, pool_k, pool_s):
                   kernel_size=k,
                   stride=s,
                   padding=p),
-        nn.LeakyReLU(negative_slope=0.2, inplace=True),
         nn.MaxPool2d(kernel_size=pool_k,
                      stride=pool_s),
+        nn.LeakyReLU(negative_slope=0.2, inplace=True),
     )
 
     return conv_block
