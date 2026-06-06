@@ -163,129 +163,127 @@ for _ in tqdm(range(config.TRAIN_IMAGE_COUNT + config.VALID_IMAGE_COUNT + config
     """==============================================================
     ## 전경 이미지 합성과 mask 생성
     =============================================================="""
-    # background class는 전경 합성 없이 배경 이미지만 사용
+    # 전경 이미지 선택
+    fg_list = sorted(os.listdir(os.path.join(
+        config.REFERENCE_FG_DIR, fg_class_selected)))
+    fg_selected = rng.choice(fg_list)
+
+    # 전경 이미지 불러오기
+    fg_path = os.path.join(config.REFERENCE_FG_DIR,
+                            fg_class_selected, fg_selected)
+    fg = cv2.imread(fg_path, cv2.IMREAD_UNCHANGED)
+
+    # 전경 이미지를 배경 안에 들어갈 수 있는 크기로 random resize
+    bg_height, bg_width = bg.shape[:2]
+    fg_height, fg_width = fg.shape[:2]
+    max_scale_width = bg_width / fg_width
+    max_scale_height = bg_height / fg_height
+    max_scale = min(max_scale_width, max_scale_height)
+    random_scale = rng.uniform(low=config.FG_SCALE_MIN,
+                                high=config.FG_SCALE_MAX)
+    fg_scale = max_scale * random_scale
+    fg_width_scaled = max(int(fg_width * fg_scale), 1)
+    fg_height_scaled = max(int(fg_height * fg_scale), 1)
+    fg = cv2.resize(src=fg,
+                    dsize=(fg_width_scaled, fg_height_scaled),
+                    interpolation=cv2.INTER_AREA)
+
+    # 전경 이미지와 alpha mask 분리
+    fg_image = fg[:, :, :3]
+    fg_mask = fg[:, :, 3]
+
+    # 전경 augmentation 강도 random 설정
+    fg_rotate_limit = int(rng.integers(low=0, high=5))
+    fg_perspective_min = float(rng.uniform(low=0.002, high=0.01))
+    fg_perspective_max = float(rng.uniform(low=0.015, high=0.04))
+    fg_hue_limit = int(rng.integers(low=2, high=8))
+    fg_saturation_fade = int(rng.integers(low=10, high=31))
+    fg_saturation_vivid = int(rng.integers(low=10, high=31))
+    fg_value_fade = int(rng.integers(low=5, high=16))
+    fg_value_vivid = int(rng.integers(low=10, high=26))
+    fg_brightness_limit = float(rng.uniform(low=0.03, high=0.12))
+    fg_contrast_limit = float(rng.uniform(low=0.03, high=0.15))
+    fg_noise_min = float(rng.uniform(low=1.0, high=5.0))
+    fg_noise_max = float(rng.uniform(low=8.0, high=30.0))
+    fg_shadow_count = int(rng.integers(low=1, high=3))
+    fg_shadow_dimension = int(rng.integers(low=2, high=5))
+    fg_flare_count = 2
+    fg_flare_radius = int(rng.integers(low=8, high=31))
+
+    # 전경 이미지와 mask에 같은 geometric transform 적용
+    fg_transform = A.Compose([
+        A.HorizontalFlip(p=0.5),
+        A.VerticalFlip(p=0.5),
+        A.Affine(rotate=(-fg_rotate_limit, fg_rotate_limit),
+                    mode=cv2.BORDER_CONSTANT,
+                    cval=(255, 255, 255),
+                    cval_mask=0,
+                    p=0.8),
+        A.Perspective(scale=(fg_perspective_min, fg_perspective_max),
+                        pad_mode=cv2.BORDER_CONSTANT,
+                        pad_val=(255, 255, 255),
+                        mask_pad_val=0,
+                        p=0.5),
+        A.OneOf([
+            A.HueSaturationValue(hue_shift_limit=fg_hue_limit,
+                                    sat_shift_limit=(-fg_saturation_fade, -10),
+                                    val_shift_limit=(-fg_value_fade, 10),
+                                    p=1.0),
+            A.HueSaturationValue(hue_shift_limit=fg_hue_limit,
+                                    sat_shift_limit=(10, fg_saturation_vivid),
+                                    val_shift_limit=(10, fg_value_vivid),
+                                    p=1.0),
+        ], p=0.6),
+        A.RandomBrightnessContrast(brightness_limit=fg_brightness_limit,
+                                    contrast_limit=fg_contrast_limit,
+                                    p=0.6),
+        A.GaussNoise(var_limit=(fg_noise_min, fg_noise_max), p=0.25),
+        A.RandomShadow(shadow_roi=(0, 0, 1, 1),
+                        num_shadows_lower=1,
+                        num_shadows_upper=fg_shadow_count,
+                        shadow_dimension=fg_shadow_dimension,
+                        p=0.25),
+        A.RandomSunFlare(flare_roi=(0, 0, 1, 1),
+                            angle_lower=0,
+                            angle_upper=1,
+                            num_flare_circles_lower=1,
+                            num_flare_circles_upper=fg_flare_count,
+                            src_radius=fg_flare_radius,
+                            p=0.15),
+    ])
+    fg_transformed = fg_transform(image=fg_image, mask=fg_mask)
+    fg_image = fg_transformed["image"]
+    fg_mask = fg_transformed["mask"]
+    fg = np.dstack([fg_image, fg_mask])
+
+    # alpha가 약한 가장자리 노이즈는 배경으로 정리
+    alpha_is_valid = fg[:, :, 3] > config.FG_ALPHA_THRESHOLD
+    fg[:, :, 3] = np.where(alpha_is_valid, fg[:, :, 3], 0)
+
+    # 전경을 배경 안쪽 random position에 배치
+    fg_height, fg_width = fg.shape[:2]
+    margin_x = bg_width - fg_width
+    margin_y = bg_height - fg_height
+    fg_left = int(rng.integers(low=0, high=margin_x + 1))
+    fg_top = int(rng.integers(low=0, high=margin_y + 1))
+    fg_right = fg_left + fg_width
+    fg_bottom = fg_top + fg_height
+
+    # alpha mask가 있는 픽셀만 해당 class label로 기록
+    visible_mask = fg[:, :, 3] > 0
+    mask_patch = mask[fg_top:fg_bottom, fg_left:fg_right]
     if class_label != class_name_to_label["background"]:
-        # 전경 이미지 선택
-        fg_list = sorted(os.listdir(os.path.join(
-            config.REFERENCE_FG_DIR, fg_class_selected)))
-        fg_selected = rng.choice(fg_list)
+        mask_patch[visible_mask] = class_label
 
-        # 전경 이미지 불러오기
-        fg_path = os.path.join(config.REFERENCE_FG_DIR,
-                               fg_class_selected, fg_selected)
-        fg = cv2.imread(fg_path, cv2.IMREAD_UNCHANGED)
-
-        # 전경 이미지를 배경 안에 들어갈 수 있는 크기로 random resize
-        bg_height, bg_width = bg.shape[:2]
-        fg_height, fg_width = fg.shape[:2]
-        max_scale_width = bg_width / fg_width
-        max_scale_height = bg_height / fg_height
-        max_scale = min(max_scale_width, max_scale_height)
-        random_scale = rng.uniform(low=config.FG_SCALE_MIN,
-                                   high=config.FG_SCALE_MAX)
-        fg_scale = max_scale * random_scale
-        fg_width_scaled = max(int(fg_width * fg_scale), 1)
-        fg_height_scaled = max(int(fg_height * fg_scale), 1)
-        fg = cv2.resize(src=fg,
-                        dsize=(fg_width_scaled, fg_height_scaled),
-                        interpolation=cv2.INTER_AREA)
-
-        # 전경 이미지와 alpha mask 분리
-        fg_image = fg[:, :, :3]
-        fg_mask = fg[:, :, 3]
-
-        # 전경 augmentation 강도 random 설정
-        fg_rotate_limit = int(rng.integers(low=0, high=5))
-        fg_perspective_min = float(rng.uniform(low=0.002, high=0.01))
-        fg_perspective_max = float(rng.uniform(low=0.015, high=0.04))
-        fg_hue_limit = int(rng.integers(low=2, high=8))
-        fg_saturation_fade = int(rng.integers(low=10, high=31))
-        fg_saturation_vivid = int(rng.integers(low=10, high=31))
-        fg_value_fade = int(rng.integers(low=5, high=16))
-        fg_value_vivid = int(rng.integers(low=10, high=26))
-        fg_brightness_limit = float(rng.uniform(low=0.03, high=0.12))
-        fg_contrast_limit = float(rng.uniform(low=0.03, high=0.15))
-        fg_noise_min = float(rng.uniform(low=1.0, high=5.0))
-        fg_noise_max = float(rng.uniform(low=8.0, high=30.0))
-        fg_shadow_count = int(rng.integers(low=1, high=3))
-        fg_shadow_dimension = int(rng.integers(low=2, high=5))
-        fg_flare_count = 2
-        fg_flare_radius = int(rng.integers(low=8, high=31))
-
-        # 전경 이미지와 mask에 같은 geometric transform 적용
-        fg_transform = A.Compose([
-            A.HorizontalFlip(p=0.5),
-            A.VerticalFlip(p=0.5),
-            A.Affine(rotate=(-fg_rotate_limit, fg_rotate_limit),
-                     mode=cv2.BORDER_CONSTANT,
-                     cval=(255, 255, 255),
-                     cval_mask=0,
-                     p=0.8),
-            A.Perspective(scale=(fg_perspective_min, fg_perspective_max),
-                          pad_mode=cv2.BORDER_CONSTANT,
-                          pad_val=(255, 255, 255),
-                          mask_pad_val=0,
-                          p=0.5),
-            A.OneOf([
-                A.HueSaturationValue(hue_shift_limit=fg_hue_limit,
-                                     sat_shift_limit=(-fg_saturation_fade, -10),
-                                     val_shift_limit=(-fg_value_fade, 10),
-                                     p=1.0),
-                A.HueSaturationValue(hue_shift_limit=fg_hue_limit,
-                                     sat_shift_limit=(10, fg_saturation_vivid),
-                                     val_shift_limit=(10, fg_value_vivid),
-                                     p=1.0),
-            ], p=0.6),
-            A.RandomBrightnessContrast(brightness_limit=fg_brightness_limit,
-                                       contrast_limit=fg_contrast_limit,
-                                       p=0.6),
-            A.GaussNoise(var_limit=(fg_noise_min, fg_noise_max), p=0.25),
-            A.RandomShadow(shadow_roi=(0, 0, 1, 1),
-                           num_shadows_lower=1,
-                           num_shadows_upper=fg_shadow_count,
-                           shadow_dimension=fg_shadow_dimension,
-                           p=0.25),
-            A.RandomSunFlare(flare_roi=(0, 0, 1, 1),
-                             angle_lower=0,
-                             angle_upper=1,
-                             num_flare_circles_lower=1,
-                             num_flare_circles_upper=fg_flare_count,
-                             src_radius=fg_flare_radius,
-                             p=0.15),
-        ])
-        fg_transformed = fg_transform(image=fg_image, mask=fg_mask)
-        fg_image = fg_transformed["image"]
-        fg_mask = fg_transformed["mask"]
-        fg = np.dstack([fg_image, fg_mask])
-
-        # alpha가 약한 가장자리 노이즈는 배경으로 정리
-        alpha_is_valid = fg[:, :, 3] > config.FG_ALPHA_THRESHOLD
-        fg[:, :, 3] = np.where(alpha_is_valid, fg[:, :, 3], 0)
-
-        # 전경을 배경 안쪽 random position에 배치
-        fg_height, fg_width = fg.shape[:2]
-        margin_x = bg_width - fg_width
-        margin_y = bg_height - fg_height
-        fg_left = int(rng.integers(low=0, high=margin_x + 1))
-        fg_top = int(rng.integers(low=0, high=margin_y + 1))
-        fg_right = fg_left + fg_width
-        fg_bottom = fg_top + fg_height
-
-        # alpha mask가 있는 픽셀만 해당 class label로 기록
-        visible_mask = fg[:, :, 3] > 0
-        mask_patch = mask[fg_top:fg_bottom, fg_left:fg_right]
-        if class_label != class_name_to_label["background"]:
-            mask_patch[visible_mask] = class_label
-
-        # alpha blending으로 전경을 배경 위에 합성
-        bg_patch = bg[fg_top:fg_bottom,
-                      fg_left:fg_right].astype(np.float32)
-        fg_rgb = fg[:, :, :3].astype(np.float32)
-        fg_alpha = fg[:, :, 3].astype(np.float32) / 255.0
-        fg_alpha = fg_alpha[:, :, None]
-        bg_patch = bg_patch * (1.0 - fg_alpha) + fg_rgb * fg_alpha
-        bg[fg_top:fg_bottom,
-           fg_left:fg_right] = np.clip(bg_patch, 0, 255).astype(np.uint8)
+    # alpha blending으로 전경을 배경 위에 합성
+    bg_patch = bg[fg_top:fg_bottom,
+                    fg_left:fg_right].astype(np.float32)
+    fg_rgb = fg[:, :, :3].astype(np.float32)
+    fg_alpha = fg[:, :, 3].astype(np.float32) / 255.0
+    fg_alpha = fg_alpha[:, :, None]
+    bg_patch = bg_patch * (1.0 - fg_alpha) + fg_rgb * fg_alpha
+    bg[fg_top:fg_bottom,
+        fg_left:fg_right] = np.clip(bg_patch, 0, 255).astype(np.uint8)
 
     """==============================================================
     ## 이미지와 mask 저장

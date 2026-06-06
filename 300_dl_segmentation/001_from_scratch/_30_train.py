@@ -80,6 +80,7 @@ optimizer = torch.optim.Adam(params=model.parameters(),
 =============================================================="""
 # 학습 시작 epoch와 best valid loss 초기화
 start_epoch = 1
+end_epoch = config.NUM_EPOCHS
 best_valid_loss = float("inf")
 
 # checkpoint file path 생성
@@ -87,19 +88,30 @@ checkpoint_path = os.path.join(
     config.CHECKPOINT_DIR, config.TRAIN_SETTING["ckp_name"])
 
 # 이어 학습 모드라면 checkpoint에서 모델과 optimizer 상태 복원
-if config.TRAIN_SETTING["train_mode"] == "resume" and os.path.exists(checkpoint_path):
+if config.TRAIN_SETTING["train_mode"] == "resume":
+    if not os.path.exists(checkpoint_path):
+        raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+
     checkpoint = torch.load(f=checkpoint_path, map_location=device)
     model.load_state_dict(state_dict=checkpoint["model_state_dict"])
-    optimizer.load_state_dict(state_dict=checkpoint["optimizer_state_dict"])
-    start_epoch = int(checkpoint["epoch"]) + 1
-    best_valid_loss = float(checkpoint["best_valid_loss"])
+    if "optimizer_state_dict" in checkpoint:
+        optimizer.load_state_dict(state_dict=checkpoint["optimizer_state_dict"])
+    else:
+        print("optimizer_state_dict not found. Resume with a new optimizer.")
+    start_epoch = int(checkpoint.get("epoch", 0)) + 1
+    end_epoch = start_epoch + config.NUM_EPOCHS - 1
+    best_valid_loss = float(checkpoint.get("best_valid_loss", float("inf")))
+elif config.TRAIN_SETTING["train_mode"] != "fresh":
+    raise ValueError(
+        f"Invalid train_mode: {config.TRAIN_SETTING['train_mode']}"
+    )
 
 """==============================================================
 # 모델 학습과 검증
 =============================================================="""
 train_loss_history = []
 valid_loss_history = []
-for epoch in range(start_epoch, config.NUM_EPOCHS + 1):
+for epoch in range(start_epoch, end_epoch + 1):
     """==============================================================
     ## 학습
     =============================================================="""
@@ -110,7 +122,7 @@ for epoch in range(start_epoch, config.NUM_EPOCHS + 1):
     train_loss_sum = 0.0
     train_data_count = 0
     train_progress = tqdm(train_loader,
-                          desc=f"Train {epoch}/{config.NUM_EPOCHS}")
+                          desc=f"Train {epoch}/{end_epoch}")
 
     # train batch loop
     for images, masks in train_progress:
@@ -165,7 +177,7 @@ for epoch in range(start_epoch, config.NUM_EPOCHS + 1):
     valid_loss_sum = 0.0
     valid_data_count = 0
     valid_progress = tqdm(valid_loader,
-                          desc=f"Valid {epoch}/{config.NUM_EPOCHS}")
+                          desc=f"Valid {epoch}/{end_epoch}")
 
     # gradient 계산 없이 valid batch loop 실행
     with torch.no_grad():
@@ -207,23 +219,23 @@ for epoch in range(start_epoch, config.NUM_EPOCHS + 1):
     valid_loss_history.append(valid_loss)
 
     # epoch 결과 표시
-    tqdm.write(f"Epoch {epoch}/{config.NUM_EPOCHS} | "
+    tqdm.write(f"Epoch {epoch}/{end_epoch} | "
                f"Train Loss: {train_loss:.4f} | "
                f"Valid Loss: {valid_loss:.4f}")
 
-    # valid loss가 가장 낮아진 경우 checkpoint 저장
+    # 이어 학습을 위해 매 epoch의 마지막 상태를 checkpoint에 저장
     if valid_loss < best_valid_loss:
         best_valid_loss = valid_loss
 
-        torch.save(
-            obj={
-                "epoch": epoch,
-                "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": optimizer.state_dict(),
-                "best_valid_loss": best_valid_loss,
-            },
-            f=checkpoint_path,
-        )
+    torch.save(
+        obj={
+            "epoch": epoch,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "best_valid_loss": best_valid_loss,
+        },
+        f=checkpoint_path,
+    )
 
 """==============================================================
 # 학습 곡선 표시

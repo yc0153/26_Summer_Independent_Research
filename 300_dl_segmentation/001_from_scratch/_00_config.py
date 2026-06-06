@@ -59,14 +59,14 @@ class Config:
         self.MASK_EXTENSIONS = ".png"
 
         # train/valid/test 합성 이미지 생성 개수
-        self.TRAIN_IMAGE_COUNT = 700
-        self.VALID_IMAGE_COUNT = 150
-        self.TEST_IMAGE_COUNT = 150
+        self.TRAIN_IMAGE_COUNT = 700*10
+        self.VALID_IMAGE_COUNT = 150*10
+        self.TEST_IMAGE_COUNT = 150*10
 
         # 세그멘테이션 학습을 위한 합성 데이터 비율과 전경 크기
-        self.BG_RATIO = 0.2
-        self.FG_SCALE_MIN = 0.25
-        self.FG_SCALE_MAX = 0.75
+        self.BG_RATIO = 0.05
+        self.FG_SCALE_MIN = 0.33
+        self.FG_SCALE_MAX = 0.8
         self.FG_ALPHA_THRESHOLD = 64
 
         # 기존 생성 데이터를 지운 뒤 다시 생성할지 여부
@@ -110,13 +110,13 @@ class Config:
         self.OUTPUT_HEAD_HIDDEN_CHANNELS = self.DECODER_OUT_CHANNELS[-1]
 
         # loss weight 설정
-        self.BACKGROUND_LOSS_WEIGHT = 0.2
+        self.BACKGROUND_LOSS_WEIGHT = 0.01
         self.DICE_LOSS_WEIGHT = 1.0
 
         # 학습 설정
         self.BATCH_SIZE = 32
-        self.NUM_EPOCHS = 50
-        self.LEARNING_RATE = 1e-3
+        self.NUM_EPOCHS = 10
+        self.LEARNING_RATE = 1e-4
         self.NUM_WORKERS = 0
 
         """==============================================================
@@ -125,7 +125,7 @@ class Config:
         # webcam index와 추론 checkpoint file name
         self.CAMERA_INDEX = 0
         self.INFERENCE_CKPT_NAME = "segmodel.pt"
-        self.INFERENCE_PROB_THRESHOLD = 0.25
+        self.INFERENCE_PROB_THRESHOLD = 0.0
 
     """==============================================================
     ## 함수: 클래스 이름과 라벨 매핑 읽기
