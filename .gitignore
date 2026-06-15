@@ -6,6 +6,8 @@ __pycache__/
 **/checkpoint/
 **/output/
 
+001_camera_calibration/input
+001_camera_calibration/output
 100_dl_classification/001_from_scratch/data/test
 100_dl_classification/001_from_scratch/data/train
 100_dl_classification/001_from_scratch/data/valid
