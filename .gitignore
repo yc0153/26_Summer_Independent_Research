@@ -5,6 +5,8 @@ __pycache__/
 **/models/
 **/checkpoint/
 **/output/
+!결과/**/output/
+!결과/**/output/**
 
 001_camera_calibration/input
 001_camera_calibration/output
