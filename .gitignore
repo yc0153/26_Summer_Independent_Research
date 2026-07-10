@@ -3,4 +3,17 @@ __pycache__/
 *.pyc
 **/dataset/
 **/models/
+**/checkpoint/
 **/output/
+
+001_camera_calibration/input
+001_camera_calibration/output
+100_dl_classification/001_from_scratch/data/test
+100_dl_classification/001_from_scratch/data/train
+100_dl_classification/001_from_scratch/data/valid
+200_dl_objectdetection/001_from_scratch/data/test
+200_dl_objectdetection/001_from_scratch/data/train
+200_dl_objectdetection/001_from_scratch/data/valid
+300_dl_segmentation/001_from_scratch/data/test
+300_dl_segmentation/001_from_scratch/data/train
+300_dl_segmentation/001_from_scratch/data/valid
