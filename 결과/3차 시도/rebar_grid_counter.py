@@ -5,18 +5,21 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from sklearn.cluster import DBSCAN
 
 
 DEFAULT_TARGET_POINTS = np.array(
     [
-        [134, 145],
-        [424, 133],
-        [546, 340],
-        [45, 338],
+        [104.0, 154.0],
+        [371.0, 135.0],
+        [453.0, 306.0],
+        [124.0, 349.0],
     ],
     dtype=np.float32,
 )
+
+HORIZONTAL_COLOR = (0, 0, 255)
+VERTICAL_COLOR = (255, 0, 0)
+GRID_LINE_THICKNESS = 2
 
 clicked_points = []
 display_image = None
@@ -327,373 +330,6 @@ def affine_rectify_axes(image, x_angle, y_angle):
     return rectified, matrix
 
 
-def build_line_edge_map(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    enhanced = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(gray)
-    blur = cv2.GaussianBlur(enhanced, (3, 3), 0)
-    edges = cv2.Canny(blur, 50, 150)
-    edges = cv2.morphologyEx(
-        edges,
-        cv2.MORPH_CLOSE,
-        cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)),
-    )
-    return gray, enhanced, edges
-
-
-def detect_line_segments(edges, image_shape):
-    height, width = image_shape[:2]
-    scale = min(height, width)
-    threshold = max(45, int(scale * 0.06))
-    min_line_length = max(35, int(scale * 0.07))
-    max_line_gap = max(12, int(scale * 0.02))
-
-    candidates = [
-        (threshold, min_line_length, max_line_gap),
-        (max(25, threshold - 15), max(25, min_line_length - 15), max_line_gap + 8),
-    ]
-
-    best = None
-    for current_threshold, current_min_length, current_max_gap in candidates:
-        lines = cv2.HoughLinesP(
-            edges,
-            1,
-            np.pi / 180,
-            threshold=current_threshold,
-            minLineLength=current_min_length,
-            maxLineGap=current_max_gap,
-        )
-        if lines is None:
-            continue
-        if best is None or len(lines) > len(best):
-            best = lines
-
-    if best is None:
-        raise RuntimeError("Could not detect line segments for clustering")
-
-    return normalize_hough_lines(best)
-
-
-def oriented_position(line, orientation, image_shape):
-    x1, y1, x2, y2 = line
-    x_mid = 0.5 * (x1 + x2)
-    y_mid = 0.5 * (y1 + y2)
-
-    if orientation == "horizontal":
-        dx = x2 - x1
-        if abs(dx) < 1e-6:
-            return None
-        slope = (y2 - y1) / dx
-        ref_x = image_shape[1] / 2.0
-        return float(y_mid - slope * (x_mid - ref_x))
-
-    dy = y2 - y1
-    if abs(dy) < 1e-6:
-        return None
-    slope = (x2 - x1) / dy
-    ref_y = image_shape[0] / 2.0
-    return float(x_mid - slope * (y_mid - ref_y))
-
-
-def collect_oriented_records(lines, orientation, image_shape, angle_tolerance=24.0):
-    records = []
-
-    for line in lines:
-        angle = line_angle(line)
-        if orientation == "horizontal":
-            if angle_distance(angle, 0) > angle_tolerance:
-                continue
-        else:
-            if angle_distance(angle, 90) > angle_tolerance:
-                continue
-
-        position = oriented_position(line, orientation, image_shape)
-        if position is None or not np.isfinite(position):
-            continue
-
-        x1, y1, x2, y2 = line
-        length = math.hypot(x2 - x1, y2 - y1)
-        if length <= 1:
-            continue
-
-        records.append(
-            {
-                "line": line,
-                "angle": float(angle),
-                "length": float(length),
-                "position": float(position),
-            }
-        )
-
-    return records
-
-
-def cluster_oriented_records(
-    records,
-    image_shape,
-    cluster_eps=None,
-    min_support_ratio=0.15,
-    min_support=60.0,
-):
-    if not records:
-        return [], [], float(cluster_eps or 0.0), float(min_support)
-
-    if cluster_eps is None:
-        cluster_eps = max(14.0, float(min(image_shape[:2])) * 0.015)
-
-    positions = np.array([[record["position"]] for record in records], dtype=np.float32)
-    labels = DBSCAN(eps=cluster_eps, min_samples=1).fit_predict(positions)
-
-    raw_clusters = []
-    for label in sorted(set(labels)):
-        indices = np.where(labels == label)[0]
-        members = [records[index] for index in indices]
-        weights = np.array([member["length"] for member in members], dtype=np.float64)
-        positions_1d = np.array([member["position"] for member in members], dtype=np.float64)
-        support = float(weights.sum())
-        center = float(np.average(positions_1d, weights=weights))
-        raw_clusters.append(
-            {
-                "center": center,
-                "support": support,
-                "segment_count": len(members),
-                "position_min": float(positions_1d.min()),
-                "position_max": float(positions_1d.max()),
-            }
-        )
-
-    raw_clusters.sort(key=lambda item: item["center"])
-    max_support = max(cluster["support"] for cluster in raw_clusters)
-    keep_support = max(float(min_support), max_support * float(min_support_ratio))
-    filtered = [
-        cluster
-        for cluster in raw_clusters
-        if cluster["support"] >= keep_support
-    ]
-
-    return filtered, raw_clusters, float(cluster_eps), float(keep_support)
-
-
-def draw_cluster_overlay(
-    rectified,
-    horizontal_records,
-    vertical_records,
-    horizontal_clusters,
-    vertical_clusters,
-):
-    result = rectified.copy()
-    segment_layer = rectified.copy()
-    height, width = result.shape[:2]
-
-    for record in horizontal_records:
-        x1, y1, x2, y2 = record["line"].astype(int)
-        cv2.line(segment_layer, (x1, y1), (x2, y2), (0, 120, 255), 1)
-
-    for record in vertical_records:
-        x1, y1, x2, y2 = record["line"].astype(int)
-        cv2.line(segment_layer, (x1, y1), (x2, y2), (255, 120, 0), 1)
-
-    result = cv2.addWeighted(result, 0.85, segment_layer, 0.15, 0)
-
-    for index, cluster in enumerate(horizontal_clusters, start=1):
-        row = int(round(cluster["center"]))
-        if 0 <= row < height:
-            cv2.line(result, (0, row), (width - 1, row), (0, 0, 255), 2)
-            cv2.putText(
-                result,
-                f"{index}:{cluster['segment_count']}/{cluster['support']:.0f}",
-                (18, max(20, row - 4)),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.55,
-                (0, 0, 255),
-                2,
-            )
-
-    for index, cluster in enumerate(vertical_clusters, start=1):
-        col = int(round(cluster["center"]))
-        if 0 <= col < width:
-            cv2.line(result, (col, 0), (col, height - 1), (255, 0, 0), 2)
-            cv2.putText(
-                result,
-                f"{index}:{cluster['segment_count']}/{cluster['support']:.0f}",
-                (max(20, col + 4), 30),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.55,
-                (255, 0, 0),
-                2,
-            )
-
-    cv2.putText(
-        result,
-        f"X-axis cluster count: {len(horizontal_clusters)}",
-        (20, 40),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1.0,
-        (0, 0, 255),
-        2,
-    )
-    cv2.putText(
-        result,
-        f"Y-axis cluster count: {len(vertical_clusters)}",
-        (20, 80),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1.0,
-        (255, 0, 0),
-        2,
-    )
-    return result
-
-
-def draw_profile_overlay(rectified, x_peaks, y_peaks):
-    result = rectified.copy()
-    height, width = result.shape[:2]
-
-    for _, row in x_peaks:
-        cv2.line(result, (0, row), (width - 1, row), (0, 0, 255), 2)
-
-    for _, col in y_peaks:
-        cv2.line(result, (col, 0), (col, height - 1), (255, 0, 0), 2)
-
-    cv2.putText(
-        result,
-        f"X-axis direction: {len(x_peaks)}",
-        (20, 40),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1.0,
-        (0, 0, 255),
-        2,
-    )
-    cv2.putText(
-        result,
-        f"Y-axis direction: {len(y_peaks)}",
-        (20, 80),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1.0,
-        (255, 0, 0),
-        2,
-    )
-    return result
-
-
-def find_profile_peaks(profile, min_distance, percentile=65, relative=0.25):
-    values = profile[profile > 0]
-    if len(values) == 0:
-        return [], 0.0
-
-    threshold = max(np.percentile(values, percentile), values.max() * relative)
-    candidates = []
-
-    for index in range(1, len(profile) - 1):
-        current = profile[index]
-        if current < threshold:
-            continue
-        if current >= profile[index - 1] and current >= profile[index + 1]:
-            candidates.append((float(current), index))
-
-    candidates.sort(reverse=True)
-    kept = []
-
-    for strength, index in candidates:
-        if all(abs(index - kept_index) >= min_distance for _, kept_index in kept):
-            kept.append((strength, index))
-
-    kept.sort(key=lambda item: item[1])
-    return kept, float(threshold)
-
-
-def make_profiles(rectified):
-    gray = cv2.cvtColor(rectified, cv2.COLOR_BGR2GRAY)
-    valid_mask = (gray > 8).astype(np.uint8) * 255
-    valid_mask = cv2.erode(
-        valid_mask,
-        cv2.getStructuringElement(cv2.MORPH_RECT, (25, 25)),
-        iterations=1,
-    )
-    valid = valid_mask > 0
-
-    enhanced = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(gray)
-    enhanced = cv2.GaussianBlur(enhanced, (3, 3), 0)
-
-    gradient_x = np.abs(cv2.Sobel(enhanced, cv2.CV_32F, 1, 0, ksize=3))
-    gradient_y = np.abs(cv2.Sobel(enhanced, cv2.CV_32F, 0, 1, ksize=3))
-
-    row_counts = valid.sum(axis=1).astype(np.float32)
-    col_counts = valid.sum(axis=0).astype(np.float32)
-
-    x_profile = (gradient_y * valid).sum(axis=1) / np.maximum(row_counts, 1)
-    y_profile = (gradient_x * valid).sum(axis=0) / np.maximum(col_counts, 1)
-
-    x_profile = cv2.GaussianBlur(
-        x_profile.reshape(-1, 1).astype(np.float32), (1, 25), 0
-    ).ravel()
-    y_profile = cv2.GaussianBlur(
-        y_profile.reshape(-1, 1).astype(np.float32), (1, 25), 0
-    ).ravel()
-
-    x_profile[row_counts < row_counts.max() * 0.15] = 0
-    y_profile[col_counts < col_counts.max() * 0.15] = 0
-    return x_profile, y_profile
-
-
-def draw_profiles(x_profile, y_profile, x_threshold, y_threshold):
-    height = 220
-    width = max(len(x_profile), len(y_profile), 1)
-    canvas = np.full((height * 2, width, 3), 255, dtype=np.uint8)
-
-    for profile, offset, color, threshold in [
-        (x_profile, 0, (0, 0, 255), x_threshold),
-        (y_profile, height, (255, 0, 0), y_threshold),
-    ]:
-        max_value = float(profile.max()) + 1e-6
-        scaled = profile / max_value * (height - 20)
-
-        for index in range(1, len(profile)):
-            cv2.line(
-                canvas,
-                (index - 1, offset + height - 10 - int(scaled[index - 1])),
-                (index, offset + height - 10 - int(scaled[index])),
-                color,
-                1,
-            )
-
-        threshold_y = offset + height - 10 - int(threshold / max_value * (height - 20))
-        cv2.line(canvas, (0, threshold_y), (len(profile) - 1, threshold_y), (0, 150, 0), 1)
-
-    return canvas
-
-
-def count_by_profiles(rectified, x_min_distance, y_min_distance, peak_percentile):
-    x_profile, y_profile = make_profiles(rectified)
-    x_min_distance = x_min_distance or max(45, int(rectified.shape[0] * 0.09))
-    y_min_distance = y_min_distance or max(45, int(rectified.shape[1] * 0.05))
-
-    x_peaks, x_threshold = find_profile_peaks(
-        x_profile,
-        min_distance=x_min_distance,
-        percentile=peak_percentile,
-    )
-    y_peaks, y_threshold = find_profile_peaks(
-        y_profile,
-        min_distance=y_min_distance,
-        percentile=peak_percentile,
-    )
-
-    overlay = draw_profile_overlay(rectified, x_peaks, y_peaks)
-    profile_plot = draw_profiles(x_profile, y_profile, x_threshold, y_threshold)
-
-    return {
-        "x_profile": x_profile,
-        "y_profile": y_profile,
-        "x_peaks": x_peaks,
-        "y_peaks": y_peaks,
-        "x_threshold": x_threshold,
-        "y_threshold": y_threshold,
-        "overlay": overlay,
-        "plot": profile_plot,
-        "x_min_distance": x_min_distance,
-        "y_min_distance": y_min_distance,
-    }
-
-
 def summarize_clusters(clusters):
     return [
         {
@@ -707,25 +343,283 @@ def summarize_clusters(clusters):
     ]
 
 
-def should_use_cluster_result(horizontal_clusters, vertical_clusters, profile_result):
-    profile_x = len(profile_result["x_peaks"])
-    profile_y = len(profile_result["y_peaks"])
-    cluster_x = len(horizontal_clusters)
-    cluster_y = len(vertical_clusters)
+def smooth_profile(profile, radius=4):
+    if radius <= 0:
+        return np.asarray(profile, dtype=np.float64)
 
-    if cluster_x < 2 or cluster_y < 2:
-        return False, "cluster_count_too_small"
+    kernel = np.ones(2 * radius + 1, dtype=np.float64)
+    kernel /= kernel.sum()
+    return np.convolve(np.asarray(profile, dtype=np.float64), kernel, mode="same")
 
-    x_tolerance = max(2, int(round(profile_x * 0.35)))
-    y_tolerance = max(2, int(round(profile_y * 0.35)))
 
-    if abs(cluster_x - profile_x) > x_tolerance:
-        return False, "x_cluster_profile_mismatch"
+def find_profile_peaks(profile, min_distance, max_peaks=20):
+    """Keep strong, separated responses as one center per grid bar."""
+    profile = smooth_profile(profile, radius=4)
+    if len(profile) < 3:
+        return []
 
-    if abs(cluster_y - profile_y) > y_tolerance:
-        return False, "y_cluster_profile_mismatch"
+    baseline = float(np.percentile(profile, 25))
+    spread = float(np.percentile(profile, 90) - baseline)
+    threshold = baseline + spread * 0.12
+    candidates = []
 
-    return True, "cluster"
+    for index in range(1, len(profile) - 1):
+        if profile[index] < threshold:
+            continue
+        if profile[index] >= profile[index - 1] and profile[index] >= profile[index + 1]:
+            candidates.append(index)
+
+    selected = []
+    for index in sorted(candidates, key=lambda item: profile[item], reverse=True):
+        if all(abs(index - other) >= min_distance for other in selected):
+            selected.append(index)
+        if len(selected) >= max_peaks:
+            break
+
+    selected.sort()
+    return selected
+
+
+def profile_clusters(profile, min_distance, max_peaks=20):
+    positions = find_profile_peaks(profile, min_distance, max_peaks=max_peaks)
+    return [
+        {
+            "center": float(position),
+            "support": float(profile[position]),
+            "segment_count": 1,
+            "position_min": float(position),
+            "position_max": float(position),
+        }
+        for position in positions
+    ]
+
+
+def masked_profile(response, mask, axis):
+    weights = mask.astype(np.float64)
+    response = np.asarray(response, dtype=np.float64)
+
+    if axis == 0:
+        numerator = (response * weights).sum(axis=0)
+        denominator = weights.sum(axis=0)
+    else:
+        numerator = (response * weights).sum(axis=1)
+        denominator = weights.sum(axis=1)
+
+    return numerator / np.maximum(denominator, 1.0)
+
+
+def grid_polygon_in_rectified(warped_shape, affine_matrix):
+    height, width = warped_shape[:2]
+    corners = np.array(
+        [[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]],
+        dtype=np.float32,
+    )
+    return cv2.transform(corners.reshape(1, -1, 2), affine_matrix)[0]
+
+
+def build_profile_clusters(rectified, grid_polygon):
+    gray = cv2.cvtColor(rectified, cv2.COLOR_BGR2GRAY)
+    mask = np.zeros(gray.shape, dtype=np.uint8)
+    cv2.fillConvexPoly(mask, np.round(grid_polygon).astype(np.int32), 1)
+
+    gray_blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    horizontal_response = cv2.morphologyEx(
+        gray,
+        cv2.MORPH_BLACKHAT,
+        cv2.getStructuringElement(cv2.MORPH_RECT, (51, 3)),
+    )
+    vertical_response = np.abs(
+        cv2.Sobel(gray_blurred, cv2.CV_32F, 1, 0, ksize=3)
+    )
+
+    horizontal_profile = masked_profile(horizontal_response, mask, axis=1)
+    vertical_profile = masked_profile(vertical_response, mask, axis=0)
+
+    horizontal_clusters = profile_clusters(
+        horizontal_profile,
+        min_distance=max(45, rectified.shape[0] // 10),
+        max_peaks=12,
+    )
+    vertical_clusters = profile_clusters(
+        vertical_profile,
+        min_distance=max(55, rectified.shape[1] // 14),
+        max_peaks=14,
+    )
+
+    if len(horizontal_clusters) < 2 or len(vertical_clusters) < 2:
+        raise RuntimeError("Could not identify both directions of the rebar grid")
+
+    return (
+        horizontal_clusters,
+        vertical_clusters,
+        horizontal_profile,
+        vertical_profile,
+        mask,
+    )
+
+
+def line_polygon_endpoints(polygon, orientation, position):
+    intersections = []
+    polygon = np.asarray(polygon, dtype=np.float32)
+
+    for start, end in zip(polygon, np.roll(polygon, -1, axis=0)):
+        if orientation == "horizontal":
+            coordinate_a, coordinate_b = start[1], end[1]
+            if abs(float(coordinate_b - coordinate_a)) < 1e-6:
+                continue
+            if min(coordinate_a, coordinate_b) <= position <= max(coordinate_a, coordinate_b):
+                ratio = (position - coordinate_a) / (coordinate_b - coordinate_a)
+                intersections.append(float(start[0] + ratio * (end[0] - start[0])))
+        else:
+            coordinate_a, coordinate_b = start[0], end[0]
+            if abs(float(coordinate_b - coordinate_a)) < 1e-6:
+                continue
+            if min(coordinate_a, coordinate_b) <= position <= max(coordinate_a, coordinate_b):
+                ratio = (position - coordinate_a) / (coordinate_b - coordinate_a)
+                intersections.append(float(start[1] + ratio * (end[1] - start[1])))
+
+    if len(intersections) < 2:
+        return None
+
+    intersections.sort()
+    if orientation == "horizontal":
+        return np.array(
+            [[intersections[0], position], [intersections[-1], position]],
+            dtype=np.float32,
+        )
+    return np.array(
+        [[position, intersections[0]], [position, intersections[-1]]],
+        dtype=np.float32,
+    )
+
+
+def draw_profile_overlay(
+    image,
+    horizontal_clusters,
+    vertical_clusters,
+    grid_polygon,
+    annotate=True,
+):
+    result = image.copy()
+
+    for index, cluster in enumerate(horizontal_clusters, start=1):
+        endpoints = line_polygon_endpoints(
+            grid_polygon,
+            "horizontal",
+            cluster["center"],
+        )
+        if endpoints is None:
+            continue
+        start, end = np.round(endpoints).astype(np.int32)
+        cv2.line(
+            result,
+            tuple(start),
+            tuple(end),
+            HORIZONTAL_COLOR,
+            GRID_LINE_THICKNESS,
+            cv2.LINE_AA,
+        )
+        if annotate:
+            cv2.putText(
+                result,
+                str(index),
+                (int(start[0]) + 5, int(start[1]) - 5),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.65,
+                HORIZONTAL_COLOR,
+                2,
+            )
+
+    for index, cluster in enumerate(vertical_clusters, start=1):
+        endpoints = line_polygon_endpoints(
+            grid_polygon,
+            "vertical",
+            cluster["center"],
+        )
+        if endpoints is None:
+            continue
+        start, end = np.round(endpoints).astype(np.int32)
+        cv2.line(
+            result,
+            tuple(start),
+            tuple(end),
+            VERTICAL_COLOR,
+            GRID_LINE_THICKNESS,
+            cv2.LINE_AA,
+        )
+        if annotate:
+            cv2.putText(
+                result,
+                str(index),
+                (int(start[0]) + 5, int(start[1]) + 20),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.65,
+                VERTICAL_COLOR,
+                2,
+            )
+
+    if annotate:
+        cv2.putText(
+            result,
+            f"Horizontal bars: {len(horizontal_clusters)}",
+            (20, 35),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.9,
+            HORIZONTAL_COLOR,
+            2,
+        )
+        cv2.putText(
+            result,
+            f"Vertical bars: {len(vertical_clusters)}",
+            (20, 70),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.9,
+            VERTICAL_COLOR,
+            2,
+        )
+
+    return result
+
+
+def transform_rectified_lines_to_original(
+    original,
+    horizontal_clusters,
+    vertical_clusters,
+    grid_polygon,
+    affine_matrix,
+    perspective_matrix,
+):
+    result = original.copy()
+    inverse_affine = cv2.invertAffineTransform(affine_matrix)
+    inverse_perspective = np.linalg.inv(perspective_matrix).astype(np.float32)
+
+    def draw_transformed_line(orientation, position):
+        endpoints = line_polygon_endpoints(grid_polygon, orientation, position)
+        if endpoints is None:
+            return
+        points = endpoints.reshape(1, -1, 2)
+        warped_points = cv2.transform(points, inverse_affine)
+        original_points = cv2.perspectiveTransform(
+            warped_points,
+            inverse_perspective,
+        )[0]
+        start, end = np.round(original_points).astype(np.int32)
+        color = HORIZONTAL_COLOR if orientation == "horizontal" else VERTICAL_COLOR
+        cv2.line(
+            result,
+            tuple(start),
+            tuple(end),
+            color,
+            GRID_LINE_THICKNESS,
+            cv2.LINE_AA,
+        )
+
+    for cluster in horizontal_clusters:
+        draw_transformed_line("horizontal", cluster["center"])
+    for cluster in vertical_clusters:
+        draw_transformed_line("vertical", cluster["center"])
+
+    return result
 
 
 def build_parser():
@@ -734,7 +628,7 @@ def build_parser():
     default_output = script_dir / "output"
 
     parser = argparse.ArgumentParser(
-        description="Rectify and count a rebar grid image using clustering."
+        description="Rectify and mark a rebar grid using directional profiles."
     )
     parser.add_argument("--image", default=str(default_image), help="Input image path")
     parser.add_argument("--output", default=str(default_output), help="Output directory")
@@ -753,54 +647,6 @@ def build_parser():
         type=int,
         default=1100,
         help="Perspective-warp output width",
-    )
-    parser.add_argument(
-        "--crop-border",
-        type=int,
-        default=18,
-        help="Extra border to keep when trimming black regions after warp",
-    )
-    parser.add_argument(
-        "--cluster-eps",
-        type=float,
-        default=None,
-        help="DBSCAN epsilon for 1D line-position clustering",
-    )
-    parser.add_argument(
-        "--cluster-angle-tolerance",
-        type=float,
-        default=24.0,
-        help="Angle tolerance for horizontal/vertical line candidates",
-    )
-    parser.add_argument(
-        "--cluster-min-support-ratio",
-        type=float,
-        default=0.15,
-        help="Relative support threshold used to filter weak clusters",
-    )
-    parser.add_argument(
-        "--cluster-min-support",
-        type=float,
-        default=60.0,
-        help="Absolute support threshold used to filter weak clusters",
-    )
-    parser.add_argument(
-        "--x-min-distance",
-        type=int,
-        default=None,
-        help="Minimum pixel distance between x-axis-direction bars in the profile fallback",
-    )
-    parser.add_argument(
-        "--y-min-distance",
-        type=int,
-        default=None,
-        help="Minimum pixel distance between y-axis-direction bars in the profile fallback",
-    )
-    parser.add_argument(
-        "--peak-percentile",
-        type=float,
-        default=65.0,
-        help="Peak threshold percentile for the profile fallback",
     )
     return parser
 
@@ -829,83 +675,41 @@ def main():
     warped_full, perspective_matrix, ordered_points = warp_by_four_points(
         image, points, output_width=args.width
     )
-    warped, warp_bbox = trim_valid_region(
-        warped_full,
-        border=args.crop_border,
-    )
+    warped = warped_full
+    warp_bbox = (0, 0, warped.shape[1], warped.shape[0])
 
-    try:
-        x_angle, y_angle, edges = estimate_grid_axes(warped)
-    except RuntimeError:
-        x_angle, y_angle, edges = estimate_grid_axes(warped_full)
-
+    x_angle, y_angle, edges = estimate_grid_axes(warped)
     rectified_full, affine_matrix = affine_rectify_axes(warped, x_angle, y_angle)
-    rectified, rect_bbox = trim_valid_region(rectified_full, border=args.crop_border)
+    rectified = rectified_full
+    rect_bbox = (0, 0, rectified.shape[1], rectified.shape[0])
+    grid_polygon = grid_polygon_in_rectified(warped.shape, affine_matrix)
 
-    _gray_rectified, _enhanced_rectified, cluster_edges = build_line_edge_map(rectified)
-    line_segments = detect_line_segments(cluster_edges, rectified.shape)
-
-    horizontal_records = collect_oriented_records(
-        line_segments,
-        "horizontal",
-        rectified.shape,
-        angle_tolerance=args.cluster_angle_tolerance,
-    )
-    vertical_records = collect_oriented_records(
-        line_segments,
-        "vertical",
-        rectified.shape,
-        angle_tolerance=args.cluster_angle_tolerance,
-    )
-
-    horizontal_clusters, horizontal_raw_clusters, cluster_eps, horizontal_keep_support = (
-        cluster_oriented_records(
-            horizontal_records,
-            rectified.shape,
-            cluster_eps=args.cluster_eps,
-            min_support_ratio=args.cluster_min_support_ratio,
-            min_support=args.cluster_min_support,
-        )
-    )
-    vertical_clusters, vertical_raw_clusters, _, vertical_keep_support = (
-        cluster_oriented_records(
-            vertical_records,
-            rectified.shape,
-            cluster_eps=args.cluster_eps,
-            min_support_ratio=args.cluster_min_support_ratio,
-            min_support=args.cluster_min_support,
-        )
-    )
-
-    cluster_overlay = draw_cluster_overlay(
-        rectified,
-        horizontal_records,
-        vertical_records,
+    (
         horizontal_clusters,
         vertical_clusters,
-    )
-
-    profile_result = count_by_profiles(
+        horizontal_profile,
+        vertical_profile,
+        grid_mask,
+    ) = build_profile_clusters(rectified, grid_polygon)
+    profile_overlay = draw_profile_overlay(
         rectified,
-        x_min_distance=args.x_min_distance,
-        y_min_distance=args.y_min_distance,
-        peak_percentile=args.peak_percentile,
-    )
-
-    use_cluster_result, primary_method = should_use_cluster_result(
         horizontal_clusters,
         vertical_clusters,
-        profile_result,
+        grid_polygon,
+        annotate=True,
     )
-    primary_reason = primary_method
-    primary_method = "cluster" if use_cluster_result else "profile_fallback"
-    primary_x_count = (
-        len(horizontal_clusters) if use_cluster_result else len(profile_result["x_peaks"])
+    primary_overlay = transform_rectified_lines_to_original(
+        image,
+        horizontal_clusters,
+        vertical_clusters,
+        grid_polygon,
+        affine_matrix,
+        perspective_matrix,
     )
-    primary_y_count = (
-        len(vertical_clusters) if use_cluster_result else len(profile_result["y_peaks"])
-    )
-    primary_overlay = cluster_overlay if use_cluster_result else profile_result["overlay"]
+
+    primary_method = "directional_profile"
+    primary_x_count = len(horizontal_clusters)
+    primary_y_count = len(vertical_clusters)
 
     imwrite_unicode(save_dir / "01_selected_corners.png", selected)
     imwrite_unicode(save_dir / "02_perspective_warp.png", warped_full)
@@ -913,16 +717,12 @@ def main():
     imwrite_unicode(save_dir / "04_hough_edges.png", edges)
     imwrite_unicode(save_dir / "05_axis_rectified.png", rectified_full)
     imwrite_unicode(save_dir / "06_trimmed_rectified.png", rectified)
-    imwrite_unicode(save_dir / "07_cluster_overlay.png", cluster_overlay)
-    imwrite_unicode(save_dir / "08_profile_overlay.png", profile_result["overlay"])
-    imwrite_unicode(save_dir / "09_profiles.png", profile_result["plot"])
-    imwrite_unicode(save_dir / "10_primary_overlay.png", primary_overlay)
+    imwrite_unicode(save_dir / "07_profile_overlay.png", profile_overlay)
+    imwrite_unicode(save_dir / "08_primary_overlay.png", primary_overlay)
 
     result = {
         "image": str(image_path),
         "primary_method": primary_method,
-        "primary_reason": primary_reason,
-        "cluster_result_used": bool(use_cluster_result),
         "x_axis_direction_count": int(primary_x_count),
         "y_axis_direction_count": int(primary_y_count),
         "ordered_points": ordered_points.tolist(),
@@ -930,62 +730,31 @@ def main():
         "rectified_bbox": list(rect_bbox),
         "x_axis_angle_after_warp": float(x_angle),
         "y_axis_angle_after_warp": float(y_angle),
-        "crop_border": int(args.crop_border),
-        "cluster_eps": float(cluster_eps),
-        "cluster_angle_tolerance": float(args.cluster_angle_tolerance),
-        "cluster_min_support_ratio": float(args.cluster_min_support_ratio),
-        "cluster_min_support": float(args.cluster_min_support),
         "perspective_matrix": perspective_matrix.tolist(),
         "affine_matrix": affine_matrix.tolist(),
         "warped_shape": list(warped_full.shape[:2]),
         "trimmed_warp_shape": list(warped.shape[:2]),
         "rectified_shape": list(rectified_full.shape[:2]),
         "trimmed_rectified_shape": list(rectified.shape[:2]),
-        "cluster": {
-            "horizontal_candidate_segments": len(horizontal_records),
-            "vertical_candidate_segments": len(vertical_records),
+        "profile": {
             "horizontal_cluster_count": len(horizontal_clusters),
             "vertical_cluster_count": len(vertical_clusters),
-            "horizontal_keep_support": float(horizontal_keep_support),
-            "vertical_keep_support": float(vertical_keep_support),
+            "horizontal_profile_peak_max": float(np.max(horizontal_profile)),
+            "vertical_profile_peak_max": float(np.max(vertical_profile)),
+            "grid_mask_pixels": int(np.count_nonzero(grid_mask)),
             "horizontal_clusters": summarize_clusters(horizontal_clusters),
             "vertical_clusters": summarize_clusters(vertical_clusters),
-            "horizontal_raw_cluster_count": len(horizontal_raw_clusters),
-            "vertical_raw_cluster_count": len(vertical_raw_clusters),
-        },
-        "profile": {
-            "x_axis_direction_count": len(profile_result["x_peaks"]),
-            "y_axis_direction_count": len(profile_result["y_peaks"]),
-            "x_min_distance": int(profile_result["x_min_distance"]),
-            "y_min_distance": int(profile_result["y_min_distance"]),
-            "peak_percentile": float(args.peak_percentile),
-            "x_peak_rows": [int(index) for _, index in profile_result["x_peaks"]],
-            "y_peak_cols": [int(index) for _, index in profile_result["y_peaks"]],
-        },
-        "profile_thresholds": {
-            "x_threshold": float(profile_result["x_threshold"]),
-            "y_threshold": float(profile_result["y_threshold"]),
-        },
-        "primary_decision": {
-            "cluster_x_count": len(horizontal_clusters),
-            "cluster_y_count": len(vertical_clusters),
-            "profile_x_count": len(profile_result["x_peaks"]),
-            "profile_y_count": len(profile_result["y_peaks"]),
         },
     }
 
-    with open(save_dir / "11_result.json", "w", encoding="utf-8") as file:
+    with open(save_dir / "09_result.json", "w", encoding="utf-8") as file:
         json.dump(result, file, ensure_ascii=False, indent=2)
 
     print(f"Input: {image_path}")
     print(f"Output: {save_dir}")
     print(f"Primary method: {primary_method}")
     print(
-        f"Cluster count: X-axis {len(horizontal_clusters)}, Y-axis {len(vertical_clusters)}"
-    )
-    print(
-        f"Profile count: X-axis {len(profile_result['x_peaks'])}, "
-        f"Y-axis {len(profile_result['y_peaks'])}"
+        f"Grid count: horizontal {len(horizontal_clusters)}, vertical {len(vertical_clusters)}"
     )
 
 
