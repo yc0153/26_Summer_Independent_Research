@@ -1,0 +1,227 @@
+{
+  "image": "/home/shlee/works/26_Summer_Independent_Research/target_image.jpg",
+  "primary_method": "directional_profile",
+  "x_axis_direction_count": 8,
+  "y_axis_direction_count": 11,
+  "ordered_points": [
+    [
+      104.0,
+      154.0
+    ],
+    [
+      371.0,
+      135.0
+    ],
+    [
+      453.0,
+      306.0
+    ],
+    [
+      124.0,
+      349.0
+    ]
+  ],
+  "warp_bbox": [
+    0,
+    0,
+    1100,
+    650
+  ],
+  "rectified_bbox": [
+    0,
+    0,
+    1252,
+    674
+  ],
+  "x_axis_angle_after_warp": 0.3150357079671078,
+  "y_axis_angle_after_warp": 76.94767525275594,
+  "perspective_matrix": [
+    [
+      4.652630975833929,
+      -0.4771929205983513,
+      -410.3859117145825
+    ],
+    [
+      0.36863636465789257,
+      5.180311019139858,
+      -836.1060788719591
+    ],
+    [
+      -0.0002509229631648831,
+      0.0017162248838154678,
+      1.0
+    ]
+  ],
+  "affine_matrix": [
+    [
+      1.0012915134429932,
+      -0.23212970793247223,
+      150.6521759033203
+    ],
+    [
+      -0.005651494488120079,
+      1.0278310775756836,
+      6.210992336273193
+    ]
+  ],
+  "warped_shape": [
+    650,
+    1100
+  ],
+  "trimmed_warp_shape": [
+    650,
+    1100
+  ],
+  "rectified_shape": [
+    674,
+    1252
+  ],
+  "trimmed_rectified_shape": [
+    674,
+    1252
+  ],
+  "profile": {
+    "horizontal_cluster_count": 8,
+    "vertical_cluster_count": 11,
+    "horizontal_profile_peak_max": 26.079563182527302,
+    "vertical_profile_peak_max": 158.5625,
+    "grid_mask_pixels": 734567,
+    "horizontal_clusters": [
+      {
+        "center": 12.0,
+        "support": 15.761601455868972,
+        "segment_count": 1,
+        "position_min": 12.0,
+        "position_max": 12.0
+      },
+      {
+        "center": 124.0,
+        "support": 15.691818181818181,
+        "segment_count": 1,
+        "position_min": 124.0,
+        "position_max": 124.0
+      },
+      {
+        "center": 252.0,
+        "support": 14.844545454545454,
+        "segment_count": 1,
+        "position_min": 252.0,
+        "position_max": 252.0
+      },
+      {
+        "center": 343.0,
+        "support": 14.192902638762511,
+        "segment_count": 1,
+        "position_min": 343.0,
+        "position_max": 343.0
+      },
+      {
+        "center": 427.0,
+        "support": 16.591446769790718,
+        "segment_count": 1,
+        "position_min": 427.0,
+        "position_max": 427.0
+      },
+      {
+        "center": 500.0,
+        "support": 15.965454545454545,
+        "segment_count": 1,
+        "position_min": 500.0,
+        "position_max": 500.0
+      },
+      {
+        "center": 586.0,
+        "support": 19.898089171974522,
+        "segment_count": 1,
+        "position_min": 586.0,
+        "position_max": 586.0
+      },
+      {
+        "center": 669.0,
+        "support": 20.44242424242424,
+        "segment_count": 1,
+        "position_min": 669.0,
+        "position_max": 669.0
+      }
+    ],
+    "vertical_clusters": [
+      {
+        "center": 7.0,
+        "support": 125.3529411764706,
+        "segment_count": 1,
+        "position_min": 7.0,
+        "position_max": 7.0
+      },
+      {
+        "center": 150.0,
+        "support": 28.908132530120483,
+        "segment_count": 1,
+        "position_min": 150.0,
+        "position_max": 150.0
+      },
+      {
+        "center": 286.0,
+        "support": 23.29535232383808,
+        "segment_count": 1,
+        "position_min": 286.0,
+        "position_max": 286.0
+      },
+      {
+        "center": 402.0,
+        "support": 39.59070464767616,
+        "segment_count": 1,
+        "position_min": 402.0,
+        "position_max": 402.0
+      },
+      {
+        "center": 519.0,
+        "support": 44.55472263868066,
+        "segment_count": 1,
+        "position_min": 519.0,
+        "position_max": 519.0
+      },
+      {
+        "center": 623.0,
+        "support": 87.53592814371258,
+        "segment_count": 1,
+        "position_min": 623.0,
+        "position_max": 623.0
+      },
+      {
+        "center": 745.0,
+        "support": 67.53373313343329,
+        "segment_count": 1,
+        "position_min": 745.0,
+        "position_max": 745.0
+      },
+      {
+        "center": 848.0,
+        "support": 43.04197901049475,
+        "segment_count": 1,
+        "position_min": 848.0,
+        "position_max": 848.0
+      },
+      {
+        "center": 954.0,
+        "support": 34.6671664167916,
+        "segment_count": 1,
+        "position_min": 954.0,
+        "position_max": 954.0
+      },
+      {
+        "center": 1063.0,
+        "support": 29.04497751124438,
+        "segment_count": 1,
+        "position_min": 1063.0,
+        "position_max": 1063.0
+      },
+      {
+        "center": 1246.0,
+        "support": 125.44,
+        "segment_count": 1,
+        "position_min": 1246.0,
+        "position_max": 1246.0
+      }
+    ]
+  }
+}
